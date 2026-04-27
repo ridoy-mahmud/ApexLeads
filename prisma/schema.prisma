@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  passwordHash  String
+  role          String    @default("VIEWER") // ADMIN, MANAGER, ANALYST, VIEWER
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  projects      ProjectMember[]
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  plan      String   @default("FREE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  projects  Project[]
+}
+
+model Project {
+  id             String         @id @default(cuid())
+  name           String
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  members        ProjectMember[]
+  crawls         CrawlJob[]
+  leads          Lead[]
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  role      String   @default("MEMBER")
+  project   Project  @relation(fields: [projectId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model CrawlJob {
+  id            String   @id @default(cuid())
+  projectId     String
+  name          String
+  status        String   @default("QUEUED") // QUEUED, RUNNING, PAUSED, COMPLETED, FAILED
+  strategy      String   @default("BFS") // BFS, LLM, SEMANTIC, RL
+  seedUrls      String   // JSON array of strings
+  config        String   // JSON object with depth, limits, etc.
+  pagesCrawled  Int      @default(0)
+  totalExpected Int?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  project       Project  @relation(fields: [projectId], references: [id])
+  pages         CrawlPage[]
+}
+
+model CrawlPage {
+  id            String   @id @default(cuid())
+  crawlJobId    String
+  url           String
+  status        String   @default("PENDING") // PENDING, FETCHED, EXTRACTED, ERROR
+  qualityScore  Float?
+  title         String?
+  htmlContent   String?  // Could be stored externally in a real app
+  createdAt     DateTime @default(now())
+  crawlJob      CrawlJob @relation(fields: [crawlJobId], references: [id], onDelete: Cascade)
+}
+
+model Lead {
+  id            String   @id @default(cuid())
+  projectId     String
+  companyName   String?
+  domain        String?
+  sourceUrl     String
+  score         Float?
+  data          String   // JSON blob of extracted info
+  status        String   @default("NEW") // NEW, CONTACTED, QUALIFIED, LOST
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  project       Project  @relation(fields: [projectId], references: [id])
+}
