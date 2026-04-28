@@ -1,94 +1,353 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
+  // Using sqlite for local development in the AI Studio environment.
+  // Can be seamlessly migrated to PostgreSQL for production.
   provider = "sqlite"
   url      = "file:./dev.db"
 }
 
+// -----------------------------------------
+// MODULE 1: AUTH & USER MANAGEMENT
+// -----------------------------------------
+
 model User {
-  id            String    @id @default(cuid())
-  name          String?
+  id            String    @id @default(uuid())
   email         String    @unique
-  passwordHash  String
-  role          String    @default("VIEWER") // ADMIN, MANAGER, ANALYST, VIEWER
+  name          String?
+  passwordHash  String?
+  avatar        String?
+  role          String    @default("VIEWER") // Type: ADMIN, MANAGER, ANALYST, VIEWER
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  projects      ProjectMember[]
+  deletedAt     DateTime?
+
+  // Relations
+  organizations OrganizationMember[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  apiKeys       APIKey[]
+  notes         Note[]
 }
+
+// enums removed for sqlite compatibility
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  plan      String   @default("FREE")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  projects  Project[]
+  id          String   @id @default(uuid())
+  name        String
+  logo        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     OrganizationMember[]
+  projects    Project[]
 }
+
+model OrganizationMember {
+  id             String       @id @default(uuid())
+  userId         String
+  organizationId String
+  role           String       @default("VIEWER") // Type: ADMIN, MANAGER, ANALYST, VIEWER
+  joinedAt       DateTime     @default(now())
+
+  user           User         @relation(fields: [userId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  sessionToken String   @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String
+  entity    String?
+  entityId  String?
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+// -----------------------------------------
+// MODULE 2: CRAWL ENGINE 
+// -----------------------------------------
 
 model Project {
-  id             String         @id @default(cuid())
-  name           String
+  id             String   @id @default(uuid())
   organizationId String
-  organization   Organization   @relation(fields: [organizationId], references: [id])
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  members        ProjectMember[]
-  crawls         CrawlJob[]
-  leads          Lead[]
-}
+  name           String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
 
-model ProjectMember {
-  id        String   @id @default(cuid())
-  projectId String
-  userId    String
-  role      String   @default("MEMBER")
-  project   Project  @relation(fields: [projectId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  crawls         CrawlJob[]
+  extractions    ExtractionJob[]
+  leads          Lead[]
+  exports        Export[]
+  webhooks       Webhook[]
+  workflows      Workflow[]
 }
 
 model CrawlJob {
-  id            String   @id @default(cuid())
-  projectId     String
-  name          String
-  status        String   @default("QUEUED") // QUEUED, RUNNING, PAUSED, COMPLETED, FAILED
-  strategy      String   @default("BFS") // BFS, LLM, SEMANTIC, RL
-  seedUrls      String   // JSON array of strings
-  config        String   // JSON object with depth, limits, etc.
-  pagesCrawled  Int      @default(0)
-  totalExpected Int?
-  startedAt     DateTime?
-  completedAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  project       Project  @relation(fields: [projectId], references: [id])
-  pages         CrawlPage[]
+  id             String   @id @default(uuid())
+  projectId      String
+  name           String
+  status         String   @default("QUEUED") // Type: QUEUED, RUNNING, PAUSED, COMPLETED, FAILED, CANCELLED
+  strategy       String   @default("BFS") // Type: BFS, LLM_PRIORITIZED, SEMANTIC_FOCUSED, RL_FOCUSED
+  seedUrls       String   // JSON array of strings
+  maxDepth       Int      @default(3)
+  maxPages       Int      @default(100)
+  respectRobots  Boolean  @default(true)
+  
+  createdAt      DateTime @default(now())
+  startedAt      DateTime?
+  completedAt    DateTime?
+  
+  project        Project  @relation(fields: [projectId], references: [id])
+  pages          CrawlPage[]
 }
+
+// enums removed
 
 model CrawlPage {
-  id            String   @id @default(cuid())
-  crawlJobId    String
-  url           String
-  status        String   @default("PENDING") // PENDING, FETCHED, EXTRACTED, ERROR
-  qualityScore  Float?
-  title         String?
-  htmlContent   String?  // Could be stored externally in a real app
-  createdAt     DateTime @default(now())
-  crawlJob      CrawlJob @relation(fields: [crawlJobId], references: [id], onDelete: Cascade)
+  id             String   @id @default(uuid())
+  crawlJobId     String
+  url            String
+  depth          Int
+  status         String   @default("DISCOVERED") // Type: DISCOVERED, QUEUED, FETCHING, SUCCESS, FAILED, SKIPPED
+  title          String?
+  score          Float?   // Priority/Relevance score
+  htmlPath       String?  // Path in object storage
+  screenshotPath String?
+  
+  discoveredAt   DateTime @default(now())
+  fetchedAt      DateTime?
+  
+  crawlJob       CrawlJob @relation(fields: [crawlJobId], references: [id], onDelete: Cascade)
+
+  @@index([crawlJobId, url])
 }
 
-model Lead {
-  id            String   @id @default(cuid())
-  projectId     String
-  companyName   String?
-  domain        String?
-  sourceUrl     String
-  score         Float?
-  data          String   // JSON blob of extracted info
-  status        String   @default("NEW") // NEW, CONTACTED, QUALIFIED, LOST
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  project       Project  @relation(fields: [projectId], references: [id])
+// enums removed
+
+// -----------------------------------------
+// MODULE 3: EXTRACTION ENGINE
+// -----------------------------------------
+
+model ExtractionTemplate {
+  id             String   @id @default(uuid())
+  name           String
+  strategy       String // Type: CSS_XPATH, AI_SCHEMA, INDEX_BASED, VISUAL_LAYOUT, MULTIMODAL_VISION
+  schemaDef      String   // JSON structure
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  jobs           ExtractionJob[]
 }
+
+// enums removed
+
+model ExtractionJob {
+  id             String   @id @default(uuid())
+  projectId      String
+  templateId     String
+  status         String   @default("QUEUED") // Type: QUEUED, RUNNING, PAUSED, COMPLETED, FAILED, CANCELLED
+  recordsFound   Int      @default(0)
+  
+  createdAt      DateTime @default(now())
+  startedAt      DateTime?
+  completedAt    DateTime?
+
+  project        Project  @relation(fields: [projectId], references: [id])
+  template       ExtractionTemplate @relation(fields: [templateId], references: [id])
+  results        ExtractionResult[]
+}
+
+model ExtractionResult {
+  id             String   @id @default(uuid())
+  extractionJobId String
+  sourceUrl      String
+  data           String   // JSON string of extracted object
+  confidence     Float?
+  createdAt      DateTime @default(now())
+
+  job            ExtractionJob @relation(fields: [extractionJobId], references: [id], onDelete: Cascade)
+}
+
+// -----------------------------------------
+// MODULE 4: LEAD DISCOVERY ENGINE
+// -----------------------------------------
+
+model Lead {
+  id             String   @id @default(uuid())
+  projectId      String
+  companyName    String
+  domain         String?
+  industry       String?
+  location       String?
+  icpScore       Float?
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  project        Project  @relation(fields: [projectId], references: [id])
+  contacts       ContactInfo[]
+  lists          LeadListItem[]
+}
+
+model ContactInfo {
+  id             String   @id @default(uuid())
+  leadId         String
+  type           String // Type: EMAIL, PHONE, LINKEDIN, TWITTER, FACEBOOK, OTHER
+  value          String
+  name           String?
+  title          String?
+  createdAt      DateTime @default(now())
+
+  lead           Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}
+
+// enums removed
+
+model LeadList {
+  id             String   @id @default(uuid())
+  name           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  items          LeadListItem[]
+}
+
+model LeadListItem {
+  id             String   @id @default(uuid())
+  listId         String
+  leadId         String
+  addedAt        DateTime @default(now())
+
+  list           LeadList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  lead           Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, leadId])
+}
+
+// -----------------------------------------
+// MODULE 6: DATA EXPORT
+// -----------------------------------------
+
+model Export {
+  id          String   @id @default(uuid())
+  projectId   String
+  status      String    @default("QUEUED") // QUEUED, RUNNING, PAUSED, COMPLETED, FAILED, CANCELLED
+  format      String    // Type: CSV, JSON, EXCEL, GSHEETS
+  fileUrl     String?
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  project     Project  @relation(fields: [projectId], references: [id])
+}
+
+// enums removed
+
+model APIKey {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String
+  keyHash     String
+  lastUsedAt  DateTime?
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime?
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Webhook {
+  id          String   @id @default(uuid())
+  projectId   String
+  url         String
+  secret      String
+  events      String   // JSON string array of event types
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id])
+}
+
+// -----------------------------------------
+// MODULE 7: WORKFLOW MANAGEMENT
+// -----------------------------------------
+
+model Workflow {
+  id          String   @id @default(uuid())
+  projectId   String
+  name        String
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project     Project  @relation(fields: [projectId], references: [id])
+  nodes       WorkflowNode[]
+  edges       WorkflowEdge[]
+  executions  WorkflowExecution[]
+}
+
+model WorkflowNode {
+  id          String   @id @default(uuid())
+  workflowId  String
+  type        String   // TRIGGER, ACTION, CONDITION, LOOP
+  config      String   // JSON config
+  positionX   Float
+  positionY   Float
+
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+model WorkflowEdge {
+  id             String   @id @default(uuid())
+  workflowId     String
+  sourceNodeId   String
+  targetNodeId   String
+
+  workflow       Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+model WorkflowExecution {
+  id          String   @id @default(uuid())
+  workflowId  String
+  status      String    @default("QUEUED") // QUEUED, RUNNING, PAUSED, COMPLETED, FAILED, CANCELLED
+  logs        String?  // JSON logs
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+model Note {
+  id          String   @id @default(uuid())
+  entityType  String   // e.g., 'LEAD', 'CRAWL'
+  entityId    String
+  content     String
+  authorId    String
+  createdAt   DateTime @default(now())
+
+  author      User     @relation(fields: [authorId], references: [id])
+}
+

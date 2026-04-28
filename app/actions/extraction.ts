@@ -4,7 +4,13 @@ import { GoogleGenAI } from "@google/genai";
 import * as cheerio from "cheerio";
 
 // Initialize Gemini Client
-const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY }); // Standard AI Studio environment key
+const aiClient = () => {
+  const key = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+  if (!key || key === "your-api-key") {
+    throw new Error("NEXT_PUBLIC_GEMINI_API_KEY environment variable is missing or invalid. Please check your secrets/environment variables.");
+  }
+  return new GoogleGenAI({ apiKey: key });
+};
 
 export async function runAISchemaExtraction(url: string, schemaDefinition: string) {
   try {
@@ -42,7 +48,7 @@ export async function runAISchemaExtraction(url: string, schemaDefinition: strin
       ${cleanText}
     `;
 
-    const response = await ai.models.generateContent({
+    const response = await aiClient().models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
         config: {

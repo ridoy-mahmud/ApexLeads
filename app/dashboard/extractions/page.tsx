@@ -34,20 +34,20 @@ export default function ExtractionWorkbench() {
   };
 
   return (
-    <div className="space-y-6 flex flex-col h-[calc(100vh-100px)]">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
+    <div className="space-y-6 flex flex-col min-h-[800px] lg:h-[calc(100vh-100px)]">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shrink-0">
         <div className="flex flex-col">
           <span className="text-[10px] uppercase tracking-[0.3em] text-white/40 mb-1">Data Modeling</span>
-          <h1 className="text-4xl font-bold tracking-tighter text-white uppercase">Extraction Workbench</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tighter text-white uppercase">Extraction Workbench</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 bg-[#111] border border-white/10 text-white px-4 py-3 text-[10px] uppercase font-bold tracking-[0.2em] hover:bg-white/5 transition-colors">
+        <div className="flex w-full sm:w-auto items-center gap-3">
+          <button className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-[#111] border border-white/10 text-white px-4 py-3 text-[10px] uppercase font-bold tracking-[0.2em] hover:bg-white/5 transition-colors">
             <Save className="w-4 h-4" /> Save Template
           </button>
           <button 
             onClick={handleTestExtraction}
             disabled={isPending}
-            className="flex items-center gap-2 bg-white disabled:opacity-50 text-black px-6 py-3 font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-white/90 active:scale-[0.98] transition-all"
+            className="flex-1 sm:flex-none justify-center flex items-center gap-2 bg-white disabled:opacity-50 text-black px-6 py-3 font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-white/90 active:scale-[0.98] transition-all"
           >
             {isPending ? <Loader2 className="w-4 h-4 animate-spin text-black" /> : <Play className="w-4 h-4 text-black" />} 
             Run Test

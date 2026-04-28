@@ -38,15 +38,15 @@ export default function CrawlStudio() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-col">
           <span className="text-[10px] uppercase tracking-[0.3em] text-white/40 mb-1">Crawl Operation</span>
-          <h1 className="text-4xl font-bold tracking-tighter uppercase text-white">Crawl Studio</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tighter uppercase text-white">Crawl Studio</h1>
         </div>
         
         {/* Run Controls */}
-        <div className="flex items-center gap-2 bg-[#111] p-1 border border-white/10 shadow-sm">
+        <div className="flex items-center gap-2 bg-[#111] p-1 border border-white/10 shadow-sm w-full sm:w-auto">
           {crawlStatus === "idle" ? (
             <button 
               onClick={startCrawl}
-              className="flex items-center gap-2 bg-white text-black px-6 py-2 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white/90 transition-colors"
+              className="flex-1 sm:flex-none flex justify-center items-center gap-2 bg-white text-black px-6 py-2 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-white/90 transition-colors"
             >
               <Play className="w-4 h-4 fill-current" /> Launch Crawl
             </button>
@@ -54,13 +54,13 @@ export default function CrawlStudio() {
             <>
               <button 
                 onClick={() => setCrawlStatus("paused")}
-                className="flex items-center gap-2 bg-amber-400 text-black px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-amber-500 transition-colors"
+                className="flex-1 sm:flex-none flex justify-center items-center gap-2 bg-amber-400 text-black px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-amber-500 transition-colors"
               >
                 <Pause className="w-4 h-4 fill-current" /> Pause
               </button>
               <button 
                 onClick={() => setCrawlStatus("idle")}
-                className="flex items-center gap-2 bg-rose-500 text-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-rose-600 transition-colors"
+                className="flex-1 sm:flex-none flex justify-center items-center gap-2 bg-rose-500 text-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-rose-600 transition-colors"
               >
                 <Square className="w-4 h-4 fill-current" /> Stop
               </button>
@@ -72,7 +72,7 @@ export default function CrawlStudio() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left Column: Configuration */}
-        <Card className="lg:col-span-2 rounded-none flex flex-col h-[calc(100vh-140px)]">
+        <Card className="lg:col-span-2 rounded-none flex flex-col min-h-[600px] lg:h-[calc(100vh-140px)]">
           <div className="flex items-center border-b border-white/5">
             <button 
               onClick={() => setActiveTab("configure")}
@@ -268,13 +268,13 @@ export default function CrawlStudio() {
 
             <div className="pt-4 border-t border-white/10">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" defaultChecked className="w-4 h-4 rounded text-blue-500 border-white/20 bg-[#050505]" />
+                <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-500 border-white/20 bg-[#050505] rounded-none focus:ring-0 focus:ring-offset-0" />
                 <span className="text-[10px] uppercase font-bold tracking-widest text-white/80">Respect robots.txt (Strict)</span>
               </label>
             </div>
              <div className="pt-2">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" defaultChecked className="w-4 h-4 rounded text-blue-500 border-white/20 bg-[#050505]" />
+                <input type="checkbox" defaultChecked className="w-4 h-4 text-blue-500 border-white/20 bg-[#050505] rounded-none focus:ring-0 focus:ring-offset-0" />
                 <span className="text-[10px] uppercase font-bold tracking-widest text-white/80">Extract Contact info</span>
               </label>
             </div>

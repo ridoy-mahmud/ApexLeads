@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Building, Settings as SettingsIcon, Bell, CreditCard, Shield, Globe, Key } from "lucide-react";
+import { User, Building, Settings as SettingsIcon, Bell, CreditCard, Shield, Globe, Key, Plus } from "lucide-react";
 import { useState } from "react";
 
 export default function Settings() {

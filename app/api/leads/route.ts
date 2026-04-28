@@ -1,29 +1,66 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get('projectId');
     
-    let leads;
+    // In real app, filter down by user's organization
     
+    let whereCondition = {};
     if (projectId) {
-      leads = await prisma.lead.findMany({
-        where: { projectId },
-        orderBy: { score: 'desc' }
+      whereCondition = { projectId };
+    }
+    
+    const leads = await prisma.lead.findMany({
+      where: whereCondition,
+      include: {
+        contacts: true
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100 // pagination not implemented yet
+    });
+
+    return NextResponse.json({ success: true, data: leads });
+
+  } catch (error) {
+    console.error('Leads Error:', error);
+    return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { companyName, projectId, domain, industry, location } = body;
+    
+    let pid = projectId;
+    if (!pid) {
+      const org = await prisma.organization.findFirst() || await prisma.organization.create({
+        data: { name: 'Default Org' }
       });
-    } else {
-      leads = await prisma.lead.findMany({
-        orderBy: { score: 'desc' },
-        take: 50 // Limit to top 50 in default view
+      const proj = await prisma.project.findFirst() || await prisma.project.create({
+        data: { name: 'Default Project', organizationId: org.id }
       });
+      pid = proj.id;
     }
 
-    return NextResponse.json({ success: true, count: leads.length, data: leads });
+    const lead = await prisma.lead.create({
+      data: {
+        companyName,
+        projectId: pid,
+        domain,
+        industry,
+        location,
+        icpScore: Math.random() // Placeholder for actual scoring
+      }
+    });
+
+    return NextResponse.json({ success: true, data: lead });
+
   } catch (error) {
+    console.error('Leads Error:', error);
     return NextResponse.json({ success: false, error: String(error) }, { status: 500 });
   }
 }

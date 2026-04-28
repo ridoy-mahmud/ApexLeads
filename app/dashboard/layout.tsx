@@ -76,7 +76,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {navItems.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                 return (
-                  <Link href={item.href} key={item.name}>
+                  <Link 
+                    href={item.href} 
+                    key={item.name}
+                    onClick={() => {
+                      if (isMobile && sidebarOpen) {
+                        useAppStore.setState({ sidebarOpen: false });
+                      }
+                    }}
+                  >
                     <div className={`
                       flex items-center gap-3 px-3 py-2.5 transition-colors text-sm font-medium
                       ${isActive ? "bg-white/10 text-white border-l-2 border-blue-600" : "text-white/60 hover:bg-white/5 hover:text-white border-l-2 border-transparent"}
