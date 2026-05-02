@@ -107,19 +107,21 @@ export default function Projects() {
                    <span className="text-white/60 flex items-center gap-1.5 uppercase tracking-widest"><Workflow className="w-4 h-4" /> Active Workflows</span>
                    <span className="font-bold text-white">{p.workflows}</span>
                  </div>
-                 <div className="flex items-center justify-between">
-                   <span className="text-white/60 flex items-center gap-1.5 uppercase tracking-widest"><Activity className="w-4 h-4" /> Last Crawl</span>
-                   <span className="font-bold text-white">{p.lastCrawl}</span>
-                 </div>
                </div>
                
-               <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-[10px] uppercase font-bold tracking-[0.2em]">
-                  <span className="flex items-center gap-1.5 text-white/40">
-                    <Calendar className="w-3.5 h-3.5" /> {p.createdAt}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <div className={`w-2 h-2 rounded-full ${p.color}`} />
-                    <span className="text-white/80">{p.status}</span>
+               <div className="pt-4 border-t border-white/10 flex flex-col xl:flex-row xl:items-center justify-between gap-3 text-[10px] uppercase font-bold tracking-[0.2em]">
+                  <div className="flex items-center gap-4">
+                    <span className="flex items-center gap-1.5 text-white/40">
+                      <Calendar className="w-3.5 h-3.5" /> {p.createdAt}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-blue-400/80">
+                      <Clock className="w-3.5 h-3.5" /> Activity: {p.lastCrawl}
+                    </span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className={`px-2 py-1 text-[9px] tracking-widest uppercase font-bold border ${p.status === 'Active' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : p.status === 'Paused' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-white/5 border-white/10 text-white/40'}`}>
+                      {p.status}
+                    </span>
                   </div>
                </div>
             </CardContent>
