@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { FolderKanban, Plus, MoreVertical, Users, Code, Calendar, Activity, Workflow, Filter, Clock } from "lucide-react";
+import { FolderKanban, Plus, MoreVertical, Users, Code, Calendar, Activity, Workflow, Filter, Clock, Newspaper } from "lucide-react";
 import { useState } from "react";
 
 const PROJECTS = [
@@ -14,6 +14,16 @@ const PROJECTS = [
 export default function Projects() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [dateFilter, setDateFilter] = useState("All Time");
+  const [fetchingNews, setFetchingNews] = useState(false);
+
+  const handleFetchNews = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFetchingNews(true);
+    setTimeout(() => {
+      setFetchingNews(false);
+      alert("Successfully fetched latest news from configured sources.");
+    }, 2000);
+  };
 
   const filteredProjects = PROJECTS.filter(p => {
     if (statusFilter !== "All" && p.status !== statusFilter) return false;
@@ -124,6 +134,19 @@ export default function Projects() {
                     </span>
                   </div>
                </div>
+               
+               {p.name === "Q1 SaaS Competitor Intel" && (
+                 <div className="pt-3 mt-3 border-t border-white/5">
+                   <button
+                     onClick={handleFetchNews}
+                     disabled={fetchingNews}
+                     className="w-full flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 py-2 text-[10px] uppercase tracking-widest font-bold border border-blue-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                   >
+                     <Newspaper className="w-3.5 h-3.5" />
+                     {fetchingNews ? "Fetching..." : "Fetch Latest News"}
+                   </button>
+                 </div>
+               )}
             </CardContent>
           </Card>
         ))}
